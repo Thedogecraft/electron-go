@@ -83,23 +83,19 @@ const goBinary = isDev
 let goProc = null
 
 function startGoProcess() {
-  console.log('Starting Go process...')
+  console.log('[GO]: Starting Go process...')
   goProc = spawn(goBinary, [], { stdio: ['pipe', 'pipe', 'pipe'] })
 
-  // uncomment to see go output
-  // goProc.stdout.on('data', (data) => {
-  //   console.log(`[Go]: ${data.toString()}`)
-  // })
-  // goProc.stderr.on('data', (data) => {
-  //   console.error(`[Go Error]: ${data.toString()}`)
-  // })
+  goProc.stderr.on('data', (data) => {
+    console.log(`[GO]: ${data.toString()}`)
+  })
 
   goProc.on('error', (err) => {
-    console.error('Failed to start Go process:', err)
+    console.error('[GO]: Failed to start Go process:', err)
   })
 
   goProc.on('exit', (code, signal) => {
-    console.log(`Go process exited with code ${code} and signal ${signal}`)
+    console.log(`[GO]: Go process exited with code ${code} and signal ${signal}`)
     setTimeout(startGoProcess, 500)
   })
 }

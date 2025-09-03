@@ -118,7 +118,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				log.Println("Error marshaling system info:", err)
 				return
 			}
-			log.Println("Sending system info:", string(jsonData))
+
+			// log.Println("Sending system info:", string(jsonData))
 			if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
 				log.Println("Write error:", err)
 			}

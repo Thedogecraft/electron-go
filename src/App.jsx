@@ -27,6 +27,12 @@ function App() {
     return () => clearInterval(interval)
   }, [isConnected])
 
+  function clearRecycleBin() {
+    client.current?.sendCommand('clear-recycle-bin')
+    console.log('Clearing recycle bin...')
+    alert('Cleared recycle bin (Not really)')
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <header className="text-center mb-8">
@@ -57,7 +63,10 @@ function App() {
             Loading system information...
           </div>
         )}
+
+       
       </div>
+      <button onClick={clearRecycleBin} className='bg-purple-700 text-white px-4 py-2 rounded-xl cursor-pointer hover:bg-purple-600 transition-all active:scale-95'>Clear Recycle Bin</button>
     </div>
   )
 }
