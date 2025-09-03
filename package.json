@@ -17,8 +17,7 @@
     "build:mac": "node scripts/build.js mac",
     "build:linux": "node scripts/build.js linux",
     "build:unpack": "node scripts/build.js unpack",
-    "build:all": "npm run build:go && npm run build:win && npm run build:mac && npm run build:linux",
-    "build-electron": "electron-builder"
+    "build:all": "npm run build:go && npm run build:win && npm run build:mac && npm run build:linux"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

@@ -5,38 +5,27 @@ const process = require('process');
 const originalDir = process.cwd();
 const goDir = path.join(__dirname, '..', 'go');
 
-// Get the target from CLI args
+
 const target = process.argv[2] || 'default';
 
 try {
-  process.chdir(goDir);
+    process.chdir(goDir);
+  
+    console.log('📦 Downloading Go modules...');
+    execSync('go mod download', { stdio: 'inherit' });
+    console.log('✅ Go modules downloaded successfully!');
+  
+    console.log('🔨 Building Go binary in the same folder...');
+    const outputPath = path.join(goDir, process.platform === 'win32' ? 'main.exe' : 'main');
+    execSync(`go build -o "${outputPath}"`, { stdio: 'inherit' });
+    console.log('✅ Go binary built successfully at', outputPath);
+  } catch (err) {
+    console.error('❌ Failed to build Go project:', err);
+    process.exit(1);
+  } finally {
+    process.chdir(originalDir);
+  }
 
-  console.log('📦 Downloading Go modules...');
-  execSync('go mod download', { stdio: 'inherit' });
-  console.log('✅ Go modules downloaded successfully!');
-
-  console.log('🔨 Building Go binary...');
-  const outputPath = path.join(originalDir, 'build', 'go', 'main.exe');
-  execSync(`go build -o "${outputPath}"`, { stdio: 'inherit' });
-  console.log('✅ Go binary built successfully!');
-} catch (err) {
-  console.error('❌ Failed to build Go project:', err);
-  process.exit(1);
-} finally {
-  process.chdir(originalDir);
-}
-
-// Build Electron
-try {
-  console.log('🔨 Building Electron app...');
-  execSync('npm run build-electron', { stdio: 'inherit' });
-  console.log('✅ Electron app built successfully!');
-} catch (err) {
-  console.error('❌ Failed to build Electron app:', err);
-  process.exit(1);
-}
-
-// Optional packaging
 try {
   if (target === 'win') {
     console.log('📦 Packaging for Windows...');
