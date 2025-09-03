@@ -1,7 +1,7 @@
 {
-  "name": "evg",
+  "name": "dashboard-electron-go",
   "version": "1.0.0",
-  "description": "An Electron application with React",
+  "description": "a system dashboard made with electron and go",
   "main": "./out/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
@@ -12,10 +12,13 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+    "build:go": "node scripts/build.js",
+    "build:win": "node scripts/build.js win",
+    "build:mac": "node scripts/build.js mac",
+    "build:linux": "node scripts/build.js linux",
+    "build:unpack": "node scripts/build.js unpack",
+    "build:all": "npm run build:go && npm run build:win && npm run build:mac && npm run build:linux",
+    "build-electron": "electron-builder"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

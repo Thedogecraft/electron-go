@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: evg
+appId: com.thedogecraft.dashboard
+productName: dashboard-electron-go
 directories:
   buildResources: build
 files:
@@ -16,7 +16,7 @@ asarUnpack:
   - resources/**
   - go/main.exe
 win:
-  executableName: evg
+  executableName: dashboard-electron-go
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

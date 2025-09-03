@@ -1,4 +1,4 @@
-module sparkle
+module dashboard
 
 go 1.25.0
 
