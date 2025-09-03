@@ -32,3 +32,6 @@ $ pnpm build:mac
 # For Linux
 $ pnpm build:linux
 ```
+
+
+#### https://chatgpt.com/c/68b79b06-a9d4-8331-9ae3-7fac0ee6022b

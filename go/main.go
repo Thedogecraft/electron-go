@@ -1,29 +1,126 @@
 package main
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
-	"os"
+	"log"
+	"net/http"
 	"runtime"
-	"strings"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
-func main() {
-	reader := bufio.NewReader(os.Stdin)
+type SystemInfo struct {
+	OS       string  `json:"os"`
+	Arch     string  `json:"arch"`
+	CPUs     int     `json:"cores"`
+	GoVer    string  `json:"goVersion"`
+	CPUUsage float64 `json:"cpu"`
+	Memory   string  `json:"memory"`
+	Uptime   string  `json:"uptime"`
+}
+
+type Command struct {
+	Action  string                 `json:"action"`
+	Options map[string]interface{} `json:"options,omitempty"`
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
+
+func getSystemInfo() SystemInfo {
+	percent, _ := cpu.Percent(0, false)
+	cpuUsage := 0.0
+	if len(percent) > 0 {
+		cpuUsage = percent[0]
+	}
+
+	vmStat, _ := mem.VirtualMemory()
+	memUsage := fmt.Sprintf("%.2f%% (Used %v MB / Total %v MB)",
+		vmStat.UsedPercent,
+		vmStat.Used/1024/1024,
+		vmStat.Total/1024/1024,
+	)
+
+	uptime := fmt.Sprintf("%.0f seconds", float64(time.Now().Unix()%100000))
+
+	return SystemInfo{
+		OS:       runtime.GOOS,
+		Arch:     runtime.GOARCH,
+		CPUs:     runtime.NumCPU(),
+		GoVer:    runtime.Version(),
+		CPUUsage: cpuUsage,
+		Memory:   memUsage,
+		Uptime:   uptime,
+	}
+}
+
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("WebSocket upgrade error:", err)
+		return
+	}
+	defer conn.Close()
+
+	log.Println("WebSocket connection established")
+
 	for {
-		input, err := reader.ReadString('\n')
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
+			log.Println("WebSocket read error:", err)
 			break
 		}
-		cmd := strings.TrimSpace(input)
-		switch cmd {
-		case "sysinfo":
-			fmt.Printf("OS: %s\nArch: %s\nCPUs: %d\nGo Version: %s\n", runtime.GOOS, runtime.GOARCH, runtime.NumCPU(), runtime.Version())
-		case "exit":
-			fmt.Println("Exiting...")
-			return
+
+		log.Println("Received message:", string(msg))
+
+		var cmd Command
+		if err := json.Unmarshal(msg, &cmd); err != nil {
+			log.Println("Invalid command JSON:", err, "Message:", string(msg))
+			continue
+		}
+
+		log.Println("Processing command:", cmd.Action)
+
+		switch cmd.Action {
+		case "get-system-info":
+			info := getSystemInfo()
+			// Format the response with type field
+			response := map[string]interface{}{
+				"type":   "system-info",
+				"os":     info.OS,
+				"cpu":    fmt.Sprintf("%.1f%%", info.CPUUsage),
+				"cores":  fmt.Sprintf("%d cores", info.CPUs),
+				"memory": info.Memory,
+				"uptime": info.Uptime,
+				"disk":   "N/A", // Add disk info if available
+			}
+
+			jsonData, err := json.Marshal(response)
+			if err != nil {
+				log.Println("Error marshaling system info:", err)
+				return
+			}
+			log.Println("Sending system info:", string(jsonData))
+			if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+				log.Println("Write error:", err)
+			}
+		case "clean-temp":
+			log.Println("Cleaning temp folder...", cmd.Options)
+		case "clear-recycle-bin":
+			log.Println("Clearing recycle bin...")
 		default:
-			fmt.Println("Unknown command")
+			log.Println("Unknown action:", cmd.Action)
 		}
 	}
+}
+
+func main() {
+	http.HandleFunc("/ws", wsHandler)
+	fmt.Println("WebSocket server running at ws://localhost:51820/ws")
+	log.Fatal(http.ListenAndServe(":51820", nil))
 }

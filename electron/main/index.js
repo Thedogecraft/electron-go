@@ -82,14 +82,16 @@ const goBinary = isDev
 
 let goProc = null
 
+const readline = require('readline')
+
 function startGoProcess() {
   goProc = spawn(goBinary, [], { stdio: ['pipe', 'pipe', 'pipe'] })
 
-  goProc.stdout.on('data', (data) => {
+  const rl = readline.createInterface({ input: goProc.stdout })
+  rl.on('line', (line) => {
     BrowserWindow.getAllWindows().forEach((win) => {
-      win.webContents.send('go-output', data.toString())
+      win.webContents.send('go-output', line)
     })
-    console.log('Go output:', data.toString())
   })
 
   goProc.stderr.on('data', (data) => {
@@ -98,7 +100,6 @@ function startGoProcess() {
 
   goProc.on('exit', (code) => {
     console.log('Go process exited with code', code)
-    // Restart the Go process after a short delay
     setTimeout(startGoProcess, 1000)
   })
 }
