@@ -6,8 +6,8 @@ import icon from '../../resources/icon.png?asset'
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1300,
+    height: 690,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -70,47 +70,38 @@ app.on('window-all-closed', () => {
   }
 })
 
-// Spawn Go process as a long-lived subprocess
+// go logic
 const { spawn } = require('child_process')
 const path = require('path')
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_RENDERER_URL
 
 const goBinary = isDev
-  ? path.join(__dirname, '../../go/main.exe') // dev: relative to source
-  : path.join(process.resourcesPath, 'app.asar.unpacked', 'go', 'main.exe') // prod: unpacked
+  ? path.join(__dirname, '../../go/main.exe') 
+  : path.join(process.resourcesPath, 'app.asar.unpacked', 'go', 'main.exe')
 
 let goProc = null
 
-const readline = require('readline')
-
 function startGoProcess() {
+  console.log('Starting Go process...')
   goProc = spawn(goBinary, [], { stdio: ['pipe', 'pipe', 'pipe'] })
 
-  const rl = readline.createInterface({ input: goProc.stdout })
-  rl.on('line', (line) => {
-    BrowserWindow.getAllWindows().forEach((win) => {
-      win.webContents.send('go-output', line)
-    })
+  // uncomment to see go output
+  // goProc.stdout.on('data', (data) => {
+  //   console.log(`[Go]: ${data.toString()}`)
+  // })
+  // goProc.stderr.on('data', (data) => {
+  //   console.error(`[Go Error]: ${data.toString()}`)
+  // })
+
+  goProc.on('error', (err) => {
+    console.error('Failed to start Go process:', err)
   })
 
-  goProc.stderr.on('data', (data) => {
-    console.error('Go error:', data.toString())
-  })
-
-  goProc.on('exit', (code) => {
-    console.log('Go process exited with code', code)
-    setTimeout(startGoProcess, 1000)
+  goProc.on('exit', (code, signal) => {
+    console.log(`Go process exited with code ${code} and signal ${signal}`)
+    setTimeout(startGoProcess, 500)
   })
 }
 
 startGoProcess()
-
-ipcMain.on('go-command', (event, command) => {
-  if (goProc && goProc.stdin.writable) {
-    goProc.stdin.write(command + '\n')
-  }
-})
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
