@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
@@ -20,6 +21,7 @@ type SystemInfo struct {
 	GoVer    string  `json:"goVersion"`
 	CPUUsage float64 `json:"cpu"`
 	Memory   string  `json:"memory"`
+	Disk     string  `json:"disk"`
 	Uptime   string  `json:"uptime"`
 }
 
@@ -46,6 +48,16 @@ func getSystemInfo() SystemInfo {
 		vmStat.Total/1024/1024,
 	)
 
+	diskStat, _ := disk.Usage("/")
+	diskUsage := "N/A"
+	if diskStat != nil {
+		diskUsage = fmt.Sprintf("%.2f%% (Used %.1f GB / Total %.1f GB)",
+			diskStat.UsedPercent,
+			float64(diskStat.Used)/1024/1024/1024,
+			float64(diskStat.Total)/1024/1024/1024,
+		)
+	}
+
 	uptime := fmt.Sprintf("%.0f seconds", float64(time.Now().Unix()%100000))
 
 	return SystemInfo{
@@ -55,6 +67,7 @@ func getSystemInfo() SystemInfo {
 		GoVer:    runtime.Version(),
 		CPUUsage: cpuUsage,
 		Memory:   memUsage,
+		Disk:     diskUsage,
 		Uptime:   uptime,
 	}
 }
@@ -96,8 +109,8 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				"cpu":    fmt.Sprintf("%.1f%%", info.CPUUsage),
 				"cores":  fmt.Sprintf("%d cores", info.CPUs),
 				"memory": info.Memory,
+				"disk":   info.Disk,
 				"uptime": info.Uptime,
-				"disk":   "N/A", // Add disk info if available
 			}
 
 			jsonData, err := json.Marshal(response)
